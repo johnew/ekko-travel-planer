@@ -26,6 +26,8 @@ const DEPARTURE_COLOR = '#d10000';
 let state = loadLocal();
 let drive = null;
 let driveSaveTimer = null;
+let driveInitializing = false;
+let queuedDriveEdits = [];
 let pickCallback = null;
 let calendarMonth = initialMonth();
 
@@ -59,6 +61,10 @@ function locationById(id) {
 }
 
 function update(mutator) {
+  if (driveInitializing) {
+    queuedDriveEdits.push(() => update(mutator));
+    return;
+  }
   const next = structuredClone(state);
   mutator(next);
   next.updatedAt = Date.now();
@@ -74,6 +80,13 @@ function replaceState(next) {
   calendarMonth = initialMonth();
   render();
   fitMap();
+}
+
+function finishDriveInitialization() {
+  driveInitializing = false;
+  const queuedEdits = queuedDriveEdits;
+  queuedDriveEdits = [];
+  queuedEdits.forEach((edit) => edit());
 }
 
 // ---------------------------------------------------------------- Map
@@ -561,9 +574,13 @@ $('#import-input').addEventListener('change', async (e) => {
   try {
     const imported = await readJsonFile(file);
     if (confirm('Replace the current trip with the imported file?')) {
-      imported.updatedAt = Date.now();
-      replaceState(imported);
-      scheduleDriveSave();
+      const applyImport = () => {
+        imported.updatedAt = Date.now();
+        replaceState(imported);
+        scheduleDriveSave();
+      };
+      if (driveInitializing) queuedDriveEdits.push(applyImport);
+      else applyImport();
     }
   } catch {
     alert('That file is not a valid trip file.');
@@ -617,6 +634,7 @@ $('#drive-btn').addEventListener('click', async () => {
     }
     drive = new DriveSync(clientId);
   }
+  driveInitializing = true;
   try {
     setStatus('Connecting to Google Drive…');
     await drive.connect();
@@ -630,9 +648,11 @@ $('#drive-btn').addEventListener('click', async () => {
       await drive.save(state);
       setStatus('Connected – trip saved to Google Drive.');
     }
+    finishDriveInitialization();
   } catch (err) {
     drive = null;
     setStatus(`Google Drive: ${err.message}`);
+    finishDriveInitialization();
   }
   renderDriveButton();
 });
