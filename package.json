@@ -1,0 +1,12 @@
+{
+  "name": "ekko-travel-planer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend-free interactive trip map with a calendar, synced through Google Drive",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test"
+  },
+  "license": "Apache-2.0"
+}
