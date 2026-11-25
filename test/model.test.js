@@ -108,6 +108,23 @@ test('groupItemsByLocation groups by location ordered by first stay, unassigned 
   assert.deepEqual(groups[3].items.map((i) => i.id), ['c']);
 });
 
+test('groupItemsByLocation uses each location earliest stay and preserves item order', () => {
+  const state = tripState({
+    stays: [
+      { id: 'late-kyoto', locationId: 'kyoto', start: '2025-09-25', end: '2025-09-25' },
+      { id: 'early-tokyo', locationId: 'tokyo', start: '2025-09-20', end: '2025-09-20' },
+      { id: 'early-kyoto', locationId: 'kyoto', start: '2025-09-19', end: '2025-09-19' },
+    ],
+    items: [
+      { id: 'first', locationId: 'kyoto' },
+      { id: 'second', locationId: 'kyoto' },
+    ],
+  });
+  const groups = groupItemsByLocation(state);
+  assert.deepEqual(groups.map((group) => group.location.id), ['kyoto', 'tokyo']);
+  assert.deepEqual(groups[0].items.map((item) => item.id), ['first', 'second']);
+});
+
 test('getDayPlan returns stays and departures for a day', () => {
   const state = tripState({
     departures: [{ id: 'd1', fromLocationId: 'kyoto', toLocationId: 'tokyo', date: '2025-09-25', time: '18:00', note: '' }],

@@ -255,21 +255,30 @@ function byDateTime(a, b) {
 
 // ---------- Grouping & schedule ----------
 
-function firstStayDate(state, locationId) {
-  const dates = state.stays.filter((s) => s.locationId === locationId).map((s) => s.start).sort();
-  return dates[0] || null;
-}
-
 /**
  * Items are organised by location (not by date). Locations with a planned stay are ordered by
  * the first day you are there; unplanned locations follow alphabetically; items that do not
  * belong to any location end up in a final group with location === null.
  */
 export function groupItemsByLocation(state) {
+  const itemsByLocation = new Map(state.locations.map((location) => [location.id, []]));
+  const firstDatesByLocation = new Map();
+  const unassigned = [];
+
+  for (const item of state.items) {
+    const items = itemsByLocation.get(item.locationId);
+    if (items) items.push(item);
+    if (!item.locationId) unassigned.push(item);
+  }
+  for (const stay of state.stays) {
+    const firstDate = firstDatesByLocation.get(stay.locationId);
+    if (!firstDate || stay.start < firstDate) firstDatesByLocation.set(stay.locationId, stay.start);
+  }
+
   const groups = state.locations.map((location) => ({
     location,
-    firstDate: firstStayDate(state, location.id),
-    items: state.items.filter((i) => i.locationId === location.id),
+    firstDate: firstDatesByLocation.get(location.id) || null,
+    items: itemsByLocation.get(location.id),
   }));
   groups.sort((a, b) => {
     if (a.firstDate && b.firstDate) return a.firstDate.localeCompare(b.firstDate);
@@ -277,7 +286,6 @@ export function groupItemsByLocation(state) {
     if (b.firstDate) return 1;
     return a.location.name.localeCompare(b.location.name);
   });
-  const unassigned = state.items.filter((i) => !i.locationId);
   if (unassigned.length) groups.push({ location: null, firstDate: null, items: unassigned });
   return groups;
 }
