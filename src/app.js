@@ -98,6 +98,7 @@ map.on('click', (e) => {
 });
 
 function startPick(message, callback) {
+  setView('map');
   pickCallback = callback;
   $('#pick-hint-text').textContent = message;
   $('#pick-hint').hidden = false;
@@ -173,6 +174,7 @@ function fitMap() {
 }
 
 function focusItem(item) {
+  setView('map');
   map.setView([item.lat, item.lng], Math.max(map.getZoom(), 15));
   itemMarkers.get(item.id)?.openPopup();
 }
@@ -474,14 +476,69 @@ $('#departure-form').addEventListener('submit', (e) => {
   $('#departure-form').reset();
 });
 
-// ---------------------------------------------------------------- Tabs
+// ---------------------------------------------------------------- Views, theme & menu
 
-for (const tab of document.querySelectorAll('[data-tab]')) {
-  tab.addEventListener('click', () => {
-    for (const t of document.querySelectorAll('[data-tab]')) t.classList.toggle('active', t === tab);
-    for (const panel of document.querySelectorAll('.tab-panel')) panel.hidden = panel.id !== `tab-${tab.dataset.tab}`;
-  });
+const mobileQuery = window.matchMedia('(max-width: 800px)');
+
+/**
+ * 'places' and 'calendar' switch the sidebar panel. 'map' only matters on mobile, where each
+ * view is full screen; on desktop the map is always visible next to the sidebar.
+ */
+function setView(view) {
+  if (view === 'map' && !mobileQuery.matches) return;
+  document.body.dataset.view = view;
+  for (const b of document.querySelectorAll('[data-view]')) b.classList.toggle('active', b.dataset.view === view);
+  if (view !== 'map') {
+    for (const panel of document.querySelectorAll('.tab-panel')) panel.hidden = panel.id !== `tab-${view}`;
+  } else {
+    map.invalidateSize();
+  }
 }
+
+for (const button of document.querySelectorAll('[data-view]')) {
+  button.addEventListener('click', () => setView(button.dataset.view));
+}
+
+// Leaving mobile layout while the map view is active: fall back to the visible sidebar panel.
+mobileQuery.addEventListener('change', () => {
+  if (!mobileQuery.matches && document.body.dataset.view === 'map') {
+    setView($('#tab-calendar').hidden ? 'places' : 'calendar');
+  }
+  map.invalidateSize();
+});
+
+// Optional item fields are expanded on desktop and tucked away on mobile.
+$('#item-more').open = !mobileQuery.matches;
+
+function renderThemeButton() {
+  const dark = document.documentElement.dataset.theme !== 'light';
+  $('#theme-btn').textContent = dark ? '☀' : '☾';
+  $('#theme-btn').title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+}
+
+$('#theme-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('ekko.theme', next);
+  renderThemeButton();
+});
+renderThemeButton();
+
+function setMenuOpen(open) {
+  $('#actions').classList.toggle('open', open);
+  $('#menu-btn').setAttribute('aria-expanded', String(open));
+}
+
+$('#menu-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setMenuOpen(!$('#actions').classList.contains('open'));
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#actions')) setMenuOpen(false);
+});
+$('#actions').addEventListener('click', (e) => {
+  if (e.target.closest('button, label')) setMenuOpen(false);
+});
 
 // ---------------------------------------------------------------- Import / export / Drive
 
@@ -586,5 +643,6 @@ function render() {
   renderMap();
 }
 
+setView('places');
 render();
 fitMap();

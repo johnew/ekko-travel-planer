@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111418">
   <title>Ekko – travel planner</title>
+  <script>
+    // Dark mode is the default; apply the saved theme before first paint to avoid a flash.
+    document.documentElement.dataset.theme = localStorage.getItem('ekko.theme') === 'light' ? 'light' : 'dark';
+  </script>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,38 +16,38 @@
   <header class="topbar">
     <h1>Ekko <small>travel planner</small></h1>
     <span id="status" class="status" role="status"></span>
-    <div class="actions">
-      <button id="drive-btn" type="button">Sync with Google Drive</button>
-      <button id="export-btn" type="button">Export</button>
-      <label class="button">Import<input id="import-input" type="file" accept="application/json,.json" hidden></label>
+    <button id="theme-btn" class="btn ghost icon-btn" type="button" aria-label="Toggle light/dark mode"></button>
+    <button id="menu-btn" class="btn ghost icon-btn menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="actions">⋯</button>
+    <div id="actions" class="actions">
+      <button id="drive-btn" class="btn primary" type="button">Sync with Google Drive</button>
+      <button id="export-btn" class="btn" type="button">Export</button>
+      <label class="btn">Import<input id="import-input" type="file" accept="application/json,.json" hidden></label>
     </div>
   </header>
 
   <main>
     <aside class="sidebar">
-      <nav class="tabs">
-        <button type="button" data-tab="places" class="active">Places</button>
-        <button type="button" data-tab="calendar">Calendar</button>
+      <nav class="tabs" aria-label="Sidebar">
+        <button type="button" data-view="places" class="active">Places</button>
+        <button type="button" data-view="calendar">Calendar</button>
       </nav>
-
-      <div id="pick-hint" class="pick-hint" hidden>
-        <span id="pick-hint-text"></span>
-        <button id="pick-cancel" type="button">Cancel</button>
-      </div>
 
       <section id="tab-places" class="tab-panel">
         <form id="item-form" class="card">
           <h2>Add something to do</h2>
           <input id="item-input" required placeholder="Paste a Google Maps link, “lat,lng” or a place name" autocomplete="off">
-          <input id="item-title" placeholder="Title (optional)" autocomplete="off">
-          <select id="item-location" aria-label="Location"></select>
-          <textarea id="item-notes" rows="2" placeholder="Notes (optional)"></textarea>
-          <button type="submit">Add to map</button>
+          <details id="item-more" class="more">
+            <summary>Title, location &amp; notes</summary>
+            <input id="item-title" placeholder="Title (optional)" autocomplete="off">
+            <select id="item-location" aria-label="Location"></select>
+            <textarea id="item-notes" rows="2" placeholder="Notes (optional)"></textarea>
+          </details>
+          <button class="btn primary" type="submit">Add to map</button>
         </form>
 
         <form id="location-form" class="card row">
           <input id="location-input" required placeholder="Add a location/area, e.g. Kyoto" autocomplete="off">
-          <button type="submit">Add location</button>
+          <button class="btn primary" type="submit">Add location</button>
         </form>
 
         <div id="groups"></div>
@@ -51,9 +56,9 @@
       <section id="tab-calendar" class="tab-panel" hidden>
         <div id="warnings"></div>
         <div class="cal-nav">
-          <button id="cal-prev" type="button" aria-label="Previous month">‹</button>
+          <button id="cal-prev" class="btn ghost icon-btn" type="button" aria-label="Previous month">‹</button>
           <h2 id="cal-title"></h2>
-          <button id="cal-next" type="button" aria-label="Next month">›</button>
+          <button id="cal-next" class="btn ghost icon-btn" type="button" aria-label="Next month">›</button>
         </div>
         <div id="calendar" class="calendar"></div>
 
@@ -64,7 +69,7 @@
             <label>From <input id="stay-start" type="date" required></label>
             <label>To <input id="stay-end" type="date"></label>
           </div>
-          <button type="submit">Add stay</button>
+          <button class="btn primary" type="submit">Add stay</button>
         </form>
 
         <form id="departure-form" class="card priority">
@@ -78,7 +83,7 @@
             <label>Time <input id="dep-time" type="time"></label>
           </div>
           <input id="dep-note" placeholder="Note, e.g. Shinkansen 18:12 from Kyoto Station" autocomplete="off">
-          <button type="submit">Add travel-on marker</button>
+          <button class="btn danger" type="submit">Add travel-on marker</button>
         </form>
 
         <h2>Schedule</h2>
@@ -87,7 +92,18 @@
     </aside>
 
     <div id="map"></div>
+
+    <div id="pick-hint" class="pick-hint" hidden>
+      <span id="pick-hint-text"></span>
+      <button id="pick-cancel" class="btn" type="button">Cancel</button>
+    </div>
   </main>
+
+  <nav class="bottom-nav" aria-label="Views">
+    <button type="button" data-view="map"><span aria-hidden="true">🗺</span>Map</button>
+    <button type="button" data-view="places" class="active"><span aria-hidden="true">📍</span>Places</button>
+    <button type="button" data-view="calendar"><span aria-hidden="true">📅</span>Calendar</button>
+  </nav>
 
   <script>
     // Optional: set your Google OAuth client ID here so users do not have to enter it

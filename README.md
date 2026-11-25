@@ -24,6 +24,9 @@ optionally be synced through **your own Google Drive**.
 - **Sync & backup.** Everything is saved in `localStorage`. Use *Export* / *Import* for JSON
   backups, or *Sync with Google Drive* to keep the trip in your Drive (`ekko-trip.json`) and use it
   from several devices.
+- **Dark by default, mobile friendly.** Toggle light/dark with ☀/☾ (remembered per browser). On
+  small screens the app switches to full-screen *Map / Places / Calendar* views with a bottom tab
+  bar; Drive/Export/Import move into the ⋯ menu and optional fields are collapsed.
 
 ## Running it
 
