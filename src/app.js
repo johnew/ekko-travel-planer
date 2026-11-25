@@ -146,7 +146,8 @@ function renderMap() {
     itemMarkers.set(item.id, marker);
   }
 
-  // High priority "travel on" markers: red dashed route plus a label at the departure point.
+  // High priority "travel on" markers: red dashed routes plus stacked labels by origin.
+  const departuresByOrigin = new Map();
   for (const dep of state.departures) {
     const from = locationById(dep.fromLocationId);
     const to = locationById(dep.toLocationId);
@@ -154,11 +155,16 @@ function renderMap() {
     L.polyline([[from.lat, from.lng], [to.lat, to.lng]], {
       color: DEPARTURE_COLOR, weight: 4, dashArray: '10 8', opacity: 0.9,
     }).addTo(layers.departures);
-    const label = `✈ ${formatDate(dep.date)}${dep.time ? ` ${dep.time}` : ''} → ${to.name}`;
+    if (!departuresByOrigin.has(from.id)) departuresByOrigin.set(from.id, { from, labels: [] });
+    departuresByOrigin.get(from.id).labels.push(
+      `✈ ${formatDate(dep.date)}${dep.time ? ` ${dep.time}` : ''} → ${to.name}`,
+    );
+  }
+  for (const { from, labels } of departuresByOrigin.values()) {
     L.marker([from.lat, from.lng], {
       icon: L.divIcon({
         className: 'departure-icon',
-        html: `<span>${escapeHtml(label)}</span>`,
+        html: labels.map((label) => `<span>${escapeHtml(label)}</span>`).join(''),
         iconSize: null,
         iconAnchor: [-16, -8],
       }),

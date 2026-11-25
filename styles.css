@@ -335,7 +335,7 @@ details.more[open] { display: flex; flex-direction: column; gap: 8px; }
 .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
 .location-label { font-size: 12px; text-align: center; }
 .departure-icon span {
-  display: inline-block;
+  display: block;
   white-space: nowrap;
   background: var(--danger);
   color: #fff;
@@ -345,6 +345,7 @@ details.more[open] { display: flex; flex-direction: column; gap: 8px; }
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
+.departure-icon span + span { margin-top: 4px; }
 .popup p { margin: 4px 0; }
 
 /* ---------- Mobile: one full-screen view at a time + bottom navigation ---------- */
