@@ -16,7 +16,7 @@ export function saveLocal(state) {
 }
 
 export function getClientId() {
-  return localStorage.getItem(CLIENT_ID_KEY) || window.EKKO_CONFIG?.googleClientId || '';
+  return window.EKKO_CONFIG?.googleClientId || localStorage.getItem(CLIENT_ID_KEY) || '';
 }
 
 export function setClientId(id) {

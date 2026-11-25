@@ -18,7 +18,7 @@ import {
 import {
   downloadJson, getClientId, loadLocal, readJsonFile, saveLocal, setClientId,
 } from './storage.js';
-import { DriveSync, loadGis } from './drive.js';
+import { DriveAuthError, DriveSync, loadGis } from './drive.js';
 
 const UNASSIGNED_COLOR = '#777777';
 const DEPARTURE_COLOR = '#d10000';
@@ -506,12 +506,22 @@ $('#import-input').addEventListener('change', async (e) => {
   }
 });
 
+const RECONNECT_MESSAGE = 'Google Drive session expired – click “Reconnect Google Drive” to keep syncing. Changes are saved in this browser meanwhile.';
+
 function renderDriveButton() {
-  $('#drive-btn').textContent = drive?.connected ? 'Disconnect Google Drive' : 'Sync with Google Drive';
+  let label = 'Sync with Google Drive';
+  if (drive?.connected) label = 'Disconnect Google Drive';
+  else if (drive) label = 'Reconnect Google Drive';
+  $('#drive-btn').textContent = label;
 }
 
 function scheduleDriveSave() {
-  if (!drive?.connected) return;
+  if (!drive) return;
+  if (!drive.connected) {
+    setStatus(RECONNECT_MESSAGE);
+    renderDriveButton();
+    return;
+  }
   clearTimeout(driveSaveTimer);
   setStatus('Unsaved changes…');
   driveSaveTimer = setTimeout(async () => {
@@ -520,7 +530,8 @@ function scheduleDriveSave() {
       await drive.save(state);
       setStatus(`Saved to Google Drive ${new Date().toLocaleTimeString()}`);
     } catch (err) {
-      setStatus(`Drive sync failed: ${err.message}`);
+      setStatus(err instanceof DriveAuthError ? RECONNECT_MESSAGE : `Drive sync failed: ${err.message}`);
+      renderDriveButton();
     }
   }, 1500);
 }
@@ -533,15 +544,17 @@ $('#drive-btn').addEventListener('click', async () => {
     renderDriveButton();
     return;
   }
-  let clientId = getClientId();
-  if (!clientId) {
-    clientId = (prompt('Enter your Google OAuth client ID (see README → Google Drive sync):') || '').trim();
-    if (!clientId) return;
-    setClientId(clientId);
+  if (!drive) {
+    let clientId = window.EKKO_CONFIG?.googleClientId || '';
+    if (!clientId) {
+      clientId = (prompt('Google OAuth client ID (see README → Google Drive sync):', getClientId()) || '').trim();
+      if (!clientId) return;
+      setClientId(clientId);
+    }
+    drive = new DriveSync(clientId);
   }
   try {
     setStatus('Connecting to Google Drive…');
-    drive = new DriveSync(clientId);
     await drive.connect();
     const remote = await drive.load();
     const remoteState = remote ? normalizeState(remote) : null;

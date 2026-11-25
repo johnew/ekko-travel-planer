@@ -11,6 +11,9 @@ const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3/files';
 
 let gisPromise = null;
 
+/** Thrown when the access token is missing or expired; the user must reconnect with a click. */
+export class DriveAuthError extends Error {}
+
 /** Loads the Google Identity Services script once. */
 export function loadGis() {
   if (window.google?.accounts?.oauth2) return Promise.resolve();
@@ -34,25 +37,28 @@ export class DriveSync {
   constructor(clientId) {
     this.clientId = clientId;
     this.token = null;
+    this.expiresAt = 0;
     this.fileId = null;
     this.tokenClient = null;
   }
 
   get connected() {
-    return Boolean(this.token);
+    return Boolean(this.token) && Date.now() < this.expiresAt;
   }
 
+  /** Must be called from a user action (click), since it may open the Google sign-in popup. */
   async connect() {
     await loadGis();
-    this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+    const firstTime = !this.tokenClient;
+    this.tokenClient = this.tokenClient || window.google.accounts.oauth2.initTokenClient({
       client_id: this.clientId,
       scope: SCOPE,
       callback: () => {},
     });
-    await this.requestToken('consent');
+    await this.requestToken(firstTime ? 'consent' : '');
   }
 
-  requestToken(prompt = '') {
+  requestToken(prompt) {
     return new Promise((resolve, reject) => {
       this.tokenClient.callback = (response) => {
         if (response.error) {
@@ -60,6 +66,8 @@ export class DriveSync {
           return;
         }
         this.token = response.access_token;
+        // Refresh a minute early to avoid using a token that expires mid-request.
+        this.expiresAt = Date.now() + ((Number(response.expires_in) || 3600) - 60) * 1000;
         resolve();
       };
       this.tokenClient.error_callback = (err) => reject(new Error(err?.message || err?.type || 'Sign-in cancelled'));
@@ -70,17 +78,19 @@ export class DriveSync {
   disconnect() {
     if (this.token) window.google?.accounts?.oauth2?.revoke(this.token, () => {});
     this.token = null;
+    this.expiresAt = 0;
     this.fileId = null;
   }
 
-  async request(url, options = {}, retry = true) {
+  async request(url, options = {}) {
+    if (!this.connected) throw new DriveAuthError('Google Drive session expired');
     const response = await fetch(url, {
       ...options,
       headers: { ...options.headers, Authorization: `Bearer ${this.token}` },
     });
-    if (response.status === 401 && retry) {
-      await this.requestToken('');
-      return this.request(url, options, false);
+    if (response.status === 401) {
+      this.token = null;
+      throw new DriveAuthError('Google Drive session expired');
     }
     if (!response.ok) throw new Error(`Google Drive request failed (${response.status})`);
     return response;
