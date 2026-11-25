@@ -5,6 +5,18 @@ MVP of an interactive map with a calendar that lets you plan vacations/trips.
 Ekko is a static website – there is **no backend**. Your trip is stored in your browser and can
 optionally be synced through **your own Google Drive**.
 
+## Screenshots
+
+Dark mode is the default (☀ switches to light mode).
+
+**Desktop**
+
+<img src="docs/screenshots/desktop-places.png" width="49%" alt="Desktop – places grouped by location"> <img src="docs/screenshots/desktop-calendar.png" width="49%" alt="Desktop – calendar with a travel-on marker">
+
+**Mobile**
+
+<img src="docs/screenshots/mobile-places.png" width="24%" alt="Mobile – places"> <img src="docs/screenshots/mobile-calendar.png" width="24%" alt="Mobile – calendar"> <img src="docs/screenshots/mobile-map.png" width="24%" alt="Mobile – map"> <img src="docs/screenshots/mobile-menu.png" width="24%" alt="Mobile – menu">
+
 ## Features
 
 - **Put things you want to do on a map.** Paste a Google Maps link (e.g.
