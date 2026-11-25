@@ -94,7 +94,8 @@ map.on('click', (e) => {
   if (!pickCallback) return;
   const cb = pickCallback;
   stopPick();
-  cb({ lat: e.latlng.lat, lng: e.latlng.lng });
+  const point = e.latlng.wrap();
+  cb({ lat: point.lat, lng: point.lng });
 });
 
 function startPick(message, callback) {
