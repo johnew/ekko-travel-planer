@@ -116,7 +116,15 @@ export class DriveSync {
     return response.json();
   }
 
-  async save(state) {
+  save(state) {
+    const snapshot = structuredClone(state);
+    this.saveQueue = (this.saveQueue || Promise.resolve())
+      .catch(() => {})
+      .then(() => this.saveSnapshot(snapshot));
+    return this.saveQueue;
+  }
+
+  async saveSnapshot(state) {
     const body = JSON.stringify(state);
     this.fileId = this.fileId || await this.findFile();
     if (this.fileId) {
