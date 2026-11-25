@@ -52,6 +52,13 @@ npm start            # = python3 -m http.server 8080
 (Opening `index.html` directly from disk does not work because browsers block ES modules on
 `file://`.) To publish it, serve the repository with GitHub Pages or any other static host.
 
+## GitHub Pages
+
+The site is published at <https://johnew.github.io/ekko-travel-planer/> when the `main` branch is
+updated. To enable publishing, set **Settings → Pages → Build and deployment → Source** to
+**GitHub Actions**. The `Publish to GitHub Pages` workflow also supports manual runs from the
+Actions tab.
+
 ## Google Drive sync
 
 Sync uses [Google Identity Services](https://developers.google.com/identity/oauth2/web/guides/use-token-model)
